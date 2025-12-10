@@ -1,0 +1,67 @@
+# Railway Template for Apache Superset
+# Visit: https://railway.app/new/template
+
+name: Apache Superset
+description: A modern, enterprise-ready business intelligence web application
+icon: https://raw.githubusercontent.com/apache/superset/master/superset-frontend/src/assets/branding/superset-logo-horiz.png
+repository: https://github.com/apache/superset
+
+services:
+  - name: superset
+    plan: starter
+    source:
+      type: dockerfile
+      dockerfile: Dockerfile.railway
+    env:
+      SUPERSET_SECRET_KEY:
+        description: Secret key for signing cookies (generate with openssl rand -base64 42)
+        generate: true
+      ADMIN_PASSWORD:
+        description: Password for the admin user
+        default: admin
+      ADMIN_EMAIL:
+        description: Email for the admin user
+        default: admin@superset.com
+      DATABASE_URL:
+        description: PostgreSQL connection URL (auto-configured)
+        reference: postgres.DATABASE_URL
+      REDIS_URL:
+        description: Redis connection URL (auto-configured)
+        reference: redis.REDIS_URL
+      SUPERSET_ENV:
+        description: Superset environment
+        default: production
+      WEB_CONCURRENCY:
+        description: Number of Gunicorn workers
+        default: "4"
+      WORKER_TIMEOUT:
+        description: Worker timeout in seconds
+        default: "300"
+    healthcheck:
+      path: /health
+      timeout: 300
+    domains:
+      - generate: true
+
+  - name: postgres
+    plan: starter
+    source:
+      type: postgresql
+      version: 16
+
+  - name: redis
+    plan: starter
+    source:
+      type: redis
+      version: 7
+
+deployment:
+  order:
+    - postgres
+    - redis
+    - superset
+
+volumes:
+  - name: superset-data
+    mountPath: /app/superset_home
+    size: 5GB
