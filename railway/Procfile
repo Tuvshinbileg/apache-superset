@@ -1,0 +1,10 @@
+# Railway Services for Apache Superset
+
+# Web Service (Main Application)
+web: gunicorn -b 0.0.0.0:${PORT:-8088} -w ${WEB_CONCURRENCY:-4} -k gevent --timeout ${WORKER_TIMEOUT:-300} --limit-request-line 0 --limit-request-field_size 0 "superset.app:create_app()"
+
+# Worker Service (Celery Worker)
+worker: celery --app=superset.tasks.celery_app:app worker --pool=prefork -O fair -c ${CELERY_WORKERS:-4}
+
+# Beat Service (Celery Beat Scheduler)
+beat: celery --app=superset.tasks.celery_app:app beat --pidfile /tmp/celerybeat.pid -l info -s /tmp/celerybeat-schedule

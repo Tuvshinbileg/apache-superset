@@ -1,0 +1,64 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# Railway Dockerfile for Apache Superset
+FROM apache/superset:latest
+
+USER root
+
+# Set environment variables for Railway
+ENV SUPERSET_ENV=production \
+    FLASK_APP="superset.app:create_app()" \
+    SUPERSET_PORT=8088 \
+    PYTHONPATH=/app/pythonpath:$PYTHONPATH
+
+# Install production dependencies and browsers for screenshots
+RUN . /app/.venv/bin/activate && \
+    uv pip install \
+    # PostgreSQL support (Railway's default database)
+    psycopg2-binary \
+    # Redis client
+    redis \
+    # Production WSGI server
+    gevent \
+    # For Alerts & Reports
+    playwright \
+    Pillow \
+    && playwright install-deps \
+    && playwright install chromium
+
+# Copy Railway-specific configuration
+COPY --chown=superset railway/superset_config.py /app/pythonpath/superset_config.py
+COPY --chown=superset railway/init.sh /app/railway/init.sh
+RUN chmod +x /app/railway/init.sh
+
+# Create necessary directories
+RUN mkdir -p /app/superset_home /app/data && \
+    chown -R superset:superset /app/superset_home /app/data
+
+# Switch back to superset user for security
+USER superset
+
+# Expose port (Railway will assign the actual port via $PORT)
+EXPOSE 8088
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8088/health || exit 1
+
+# Default command (can be overridden by Railway)
+CMD ["/app/docker/entrypoints/run-server.sh"]
