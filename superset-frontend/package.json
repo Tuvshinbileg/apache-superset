@@ -231,7 +231,7 @@
     "@babel/preset-env": "^7.27.2",
     "@babel/preset-react": "^7.27.1",
     "@babel/preset-typescript": "^7.26.0",
-    "@babel/register": "^7.23.7",
+    "@babel/register": "^7.28.3",
     "@babel/runtime": "^7.28.4",
     "@babel/runtime-corejs3": "^7.28.2",
     "@babel/types": "^7.26.9",
